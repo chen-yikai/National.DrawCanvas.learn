@@ -66,7 +66,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun DrawCanvas() {
     val lines = remember { mutableStateListOf<Line>() }
