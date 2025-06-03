@@ -77,7 +77,7 @@ class Converters {
 @Dao
 interface DrawDao {
     @Insert
-    suspend fun insert(draw: Draw)
+    suspend fun insert(draw: Draw):Long
 
     @Query("SELECT * FROM draws WHERE id = :id")
     fun get(id: Int): Flow<Draw>
@@ -87,6 +87,9 @@ interface DrawDao {
 
     @Query("DELETE FROM draws WHERE id = :id")
     suspend fun delete(id: Int)
+
+    @Query("UPDATE draws SET draw = :draw WHERE id = :id")
+    suspend fun update(id: Int, draw: List<Line>)
 }
 
 @Database(entities = [Draw::class], version = 1)

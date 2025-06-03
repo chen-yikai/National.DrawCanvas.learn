@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Menu
@@ -100,6 +101,7 @@ fun DrawCanvas(db: DrawDao) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val draws by db.getAll().collectAsState(emptyList())
     var name by remember { mutableStateOf("untitled") }
+    var id by remember { mutableIntStateOf(-1) }
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog)
@@ -126,9 +128,16 @@ fun DrawCanvas(db: DrawDao) {
 
     if (showBottomSheet)
         ModalBottomSheet(onDismissRequest = { showBottomSheet = false }) {
-            LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
+            LazyColumn(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 item {
                     Text("Draws", fontSize = 40.sp, fontWeight = FontWeight.Bold)
+                }
+                item {
+                    if (draws.isEmpty())
+                        Text("Nothing is here")
                 }
                 items(draws) {
                     Card(
@@ -137,6 +146,7 @@ fun DrawCanvas(db: DrawDao) {
                             .padding(vertical = 5.dp, horizontal = 15.dp)
                             .clickable {
                                 if (draws.isNotEmpty()) {
+                                    id = it.id
                                     name = it.name
                                     lines.clear()
                                     lines.addAll(it.draw)
@@ -168,18 +178,29 @@ fun DrawCanvas(db: DrawDao) {
         }
 
     Column(Modifier.fillMaxSize()) {
-        Text(
-            name,
-            fontWeight = FontWeight.Bold,
-            fontSize = 25.sp,
+        Row(
             modifier = Modifier
-                .statusBarsPadding()
-                .fillMaxWidth()
-                .clickable {
-                    showDialog = true
-                },
-            textAlign = TextAlign.Center
-        )
+                .fillMaxWidth().padding(horizontal = 15.dp)
+                .statusBarsPadding(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 25.sp,
+                modifier = Modifier
+                    .clickable {
+                        showDialog = true
+                    },
+                textAlign = TextAlign.Center
+            )
+            IconButton(onClick = {
+                lines.clear()
+                id = -1
+                name = "untitled"
+            }) { Icon(Icons.Default.Add, contentDescription = null) }
+        }
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -240,7 +261,11 @@ fun DrawCanvas(db: DrawDao) {
                 item {
                     IconButton(onClick = {
                         scope.launch {
-                            db.insert(Draw(name = name, draw = lines))
+                            if (id >= 0) db.update(id, lines)
+                            else {
+                                val returnId = db.insert(Draw(name = name, draw = lines))
+                                id = returnId.toInt()
+                            }
                         }
                     }) { Icon(Icons.Default.Done, contentDescription = "") }
                 }
